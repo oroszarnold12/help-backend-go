@@ -1,7 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"help/cmd/api"
+	"help/config"
+	"log"
+)
 
 func main() {
-	fmt.Println("Hello world")
+	api := api.NewApi(config.Env.Port)
+	if err := api.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
