@@ -19,11 +19,11 @@ func main() {
 	}
 	_, err := db.NewMySqlDb(dbConfig)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Cannot connect to database: %v", err)
 	}
 
 	api := api.NewApi(config.Env.ApiPort)
 	if err := api.Run(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Cannot create api: %v", err)
 	}
 }
