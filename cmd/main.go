@@ -3,11 +3,26 @@ package main
 import (
 	"help/cmd/api"
 	"help/config"
+	"help/db"
 	"log"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 func main() {
-	api := api.NewApi(config.Env.Port)
+	dbConfig := mysql.Config{
+		User:                 config.Env.DbUser,
+		Passwd:               config.Env.DbPassword,
+		DBName:               config.Env.DbName,
+		Addr:                 config.Env.DbAddress,
+		AllowNativePasswords: true,
+	}
+	_, err := db.NewMySqlDb(dbConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	api := api.NewApi(config.Env.ApiPort)
 	if err := api.Run(); err != nil {
 		log.Fatal(err)
 	}
