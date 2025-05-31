@@ -17,12 +17,12 @@ func main() {
 		Addr:                 config.Env.DbAddress,
 		AllowNativePasswords: true,
 	}
-	_, err := db.NewMySqlDb(dbConfig)
+	mysqlDb, err := db.NewMySqlDb(dbConfig)
 	if err != nil {
 		log.Fatalf("Cannot connect to database: %v", err)
 	}
 
-	api := api.NewApi(config.Env.ApiPort)
+	api := api.NewApi(config.Env.ApiPort, mysqlDb)
 	if err := api.Run(); err != nil {
 		log.Fatalf("Cannot create api: %v", err)
 	}
