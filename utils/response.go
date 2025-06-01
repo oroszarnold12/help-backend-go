@@ -11,11 +11,14 @@ import (
 func WriteJson(writer http.ResponseWriter, status int, data any) {
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(status)
-	err := json.NewEncoder(writer).Encode(data)
 
-	if err != nil {
-		log.Printf("Failed to encode %v to JSON, %v", data, err)
-		writer.WriteHeader(http.StatusInternalServerError)
+	if data != nil {
+		err := json.NewEncoder(writer).Encode(data)
+
+		if err != nil {
+			log.Printf("Failed to encode %v to JSON, %v", data, err)
+			writer.WriteHeader(http.StatusInternalServerError)
+		}
 	}
 }
 

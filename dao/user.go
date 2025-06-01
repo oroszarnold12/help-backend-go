@@ -17,9 +17,9 @@ func NewUserDao(db *sql.DB) *UserDao {
 }
 
 func (dao *UserDao) CreateUser(user model.UserModel) error {
-	_, err := dao.db.Exec("INSERT INTO users (uuid, first_name, last_name, email, password) VALUES (?,?,?,?)", user.FirstName, user.LastName, user.Email, user.Password)
+	_, err := dao.db.Exec("INSERT INTO users (uuid, first_name, last_name, email, password) VALUES (?,?,?,?, ?)", user.Uuid, user.FirstName, user.LastName, user.Email, user.Password)
 	if err != nil {
-		return err
+		return fmt.Errorf("Cannot exec statement: %w", err)
 	}
 
 	return nil

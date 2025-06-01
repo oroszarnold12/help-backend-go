@@ -1,10 +1,15 @@
 package service
 
 import (
+	"errors"
+	"fmt"
 	"help/dao"
+	"help/dto"
 	"help/errorsx"
+	"help/model"
 	"help/utils"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -19,6 +24,7 @@ func NewUserService(userDao *dao.UserDao) *UserService {
 
 func (service *UserService) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/user", service.getUserByEmail).Methods("GET")
+	router.HandleFunc("/persons", service.registerUsers).Methods("POST")
 }
 
 func (service *UserService) getUserByEmail(writer http.ResponseWriter, request *http.Request) {
@@ -35,4 +41,53 @@ func (service *UserService) getUserByEmail(writer http.ResponseWriter, request *
 	}
 
 	utils.WriteJson(writer, http.StatusOK, user.ToDto())
+}
+
+func (service *UserService) registerUsers(writer http.ResponseWriter, request *http.Request) {
+	var userPostDtos []dto.UserPostDto
+	if err := utils.ParseJSON(request, &userPostDtos); err != nil {
+		utils.WriteError(writer, errorsx.NewBadRequestError(err.Error()))
+		return
+	}
+
+	if err := utils.Validator.Var(userPostDtos, "dive"); err != nil {
+		utils.WriteError(writer, errorsx.NewBadRequestError(err.Error()))
+		return
+	}
+
+	existingEmails := []string{}
+	for _, userPostDto := range userPostDtos {
+		_, err := service.userDao.GetUserByEmail(userPostDto.Email)
+		if err == nil {
+			existingEmails = append(existingEmails, userPostDto.Email)
+			continue
+		}
+
+		var notFoundError *errorsx.NotFoundError
+		if !errors.As(err, &notFoundError) {
+			utils.WriteError(writer, fmt.Errorf("Cannot check if email '%v' is used or not: %w", userPostDto.Email, err))
+			return
+		}
+	}
+
+	if len(existingEmails) > 0 {
+		utils.WriteError(writer, errorsx.NewConflictError("User", "emails", strings.Join(existingEmails, ", ")))
+		return
+	}
+
+	for _, userPostDto := range userPostDtos {
+		hashedPassword, err := utils.HashPassword(userPostDto.Password)
+		if err != nil {
+			utils.WriteError(writer, err)
+			return
+		}
+		userModel := model.UserModelFromPostDto(userPostDto, hashedPassword)
+
+		if err := service.userDao.CreateUser(userModel); err != nil {
+			utils.WriteError(writer, err)
+			return
+		}
+	}
+
+	utils.WriteJson(writer, http.StatusCreated, nil)
 }
