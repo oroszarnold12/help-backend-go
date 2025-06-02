@@ -12,6 +12,7 @@ type User struct {
 	LastName  string
 	Email     string
 	Password  string
+	Role      Role
 }
 
 func (user User) ToDto() dto.UserGetDto {
@@ -21,6 +22,7 @@ func (user User) ToDto() dto.UserGetDto {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
+		Role:      string(user.Role),
 	}
 }
 
@@ -31,5 +33,6 @@ func UserFromPostDto(dto dto.UserPostDto, password string) User {
 		LastName:  dto.LastName,
 		Email:     dto.Email,
 		Password:  password,
+		Role:      Role(dto.Role),
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 type Api struct {
@@ -23,8 +24,12 @@ func NewApi(port int, db *sql.DB) *Api {
 
 func (api *Api) Run() error {
 	router := mux.NewRouter()
-	publicRouter := router.PathPrefix("/api/v1").Subrouter()
-	authorizedRouter := router.PathPrefix("/api/v1").Subrouter()
+	// front-end does not support api/v1 format
+	// publicRouter := router.PathPrefix("/api/v1").Subrouter()
+	// authorizedRouter := router.PathPrefix("/api/v1").Subrouter()
+
+	publicRouter := router.NewRoute().Subrouter()
+	authorizedRouter := router.NewRoute().Subrouter()
 
 	userDao := dao.NewUserDao(api.db)
 
@@ -41,7 +46,11 @@ func (api *Api) Run() error {
 	authService := service.NewAuthService(userDao)
 	authService.RegisterRoutes(publicRouter, authorizedRouter)
 
+	statusService := service.NewStatusService()
+	statusService.RegisterRoutes(publicRouter)
+
+	handler := cors.New(cors.Options{AllowedOrigins: []string{"http://localhost:8100"}, AllowCredentials: true}).Handler(router)
 	log.Println("Listening on port", api.port)
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", api.port), router)
+	return http.ListenAndServe(fmt.Sprintf(":%d", api.port), handler)
 }

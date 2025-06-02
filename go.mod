@@ -28,4 +28,5 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/google/uuid v1.6.0
+	github.com/rs/cors v1.11.1
 )

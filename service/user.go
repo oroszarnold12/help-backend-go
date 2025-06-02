@@ -36,17 +36,32 @@ func (service *UserService) getCurrentUser(writer http.ResponseWriter, request *
 }
 
 func (service *UserService) getUsers(writer http.ResponseWriter, request *http.Request) {
+	currentUser := request.Context().Value(constant.UserContextKey).(*model.User)
+	isAdmin := currentUser.Role == model.RoleAdmin
+
 	users, err := service.userDao.GetUsers()
 	if err != nil {
 		utils.WriteError(writer, err)
 	}
 
-	userDtos := make([]dto.UserGetDto, len(users))
-	for index, user := range users {
-		userDtos[index] = user.ToDto()
-	}
+	if isAdmin {
+		userDtos := make([]dto.UserGetDto, len(users))
+		for index, user := range users {
+			userDtos[index] = user.ToDto()
+		}
 
-	utils.WriteJson(writer, http.StatusOK, userDtos)
+		utils.WriteJson(writer, http.StatusOK, map[string][]dto.UserGetDto{"persons": userDtos})
+	} else {
+		var nonAdminUserDtos []dto.UserGetDto
+
+		for _, user := range users {
+			if user.Role != model.RoleAdmin {
+				nonAdminUserDtos = append(nonAdminUserDtos, user.ToDto())
+			}
+		}
+
+		utils.WriteJson(writer, http.StatusOK, map[string][]dto.UserGetDto{"persons": nonAdminUserDtos})
+	}
 }
 
 func (service *UserService) registerUsers(writer http.ResponseWriter, request *http.Request) {
