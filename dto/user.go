@@ -1,6 +1,6 @@
 package dto
 
-type UserDto struct {
+type UserGetDto struct {
 	Id        int    `json:"id"`
 	Uuid      string `json:"uuid"`
 	FirstName string `json:"firstName"`

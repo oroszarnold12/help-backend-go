@@ -8,6 +8,8 @@ import (
 	"help/model"
 )
 
+const userSelectFields = "id, uuid, first_name, last_name, email, password"
+
 type UserDao struct {
 	db *sql.DB
 }
@@ -16,7 +18,7 @@ func NewUserDao(db *sql.DB) *UserDao {
 	return &UserDao{db: db}
 }
 
-func (dao *UserDao) CreateUser(user model.UserModel) error {
+func (dao *UserDao) CreateUser(user model.User) error {
 	_, err := dao.db.Exec("INSERT INTO users (uuid, first_name, last_name, email, password) VALUES (?,?,?,?, ?)", user.Uuid, user.FirstName, user.LastName, user.Email, user.Password)
 	if err != nil {
 		return fmt.Errorf("Cannot exec statement: %w", err)
@@ -25,10 +27,10 @@ func (dao *UserDao) CreateUser(user model.UserModel) error {
 	return nil
 }
 
-func (dao *UserDao) GetUserByEmail(email string) (*model.UserModel, error) {
-	row := dao.db.QueryRow("SELECT id, uuid, first_name, last_name, email, password FROM users where email = ?", email)
+func (dao *UserDao) GetUserByEmail(email string) (*model.User, error) {
+	row := dao.db.QueryRow(fmt.Sprintf("SELECT %s FROM users where email = ?", userSelectFields), email)
 
-	userModel, err := scanRowIntoUserModel(row)
+	user, err := scanRowToUser(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errorsx.NewNotFoundError("User", email)
@@ -37,13 +39,13 @@ func (dao *UserDao) GetUserByEmail(email string) (*model.UserModel, error) {
 		return nil, fmt.Errorf("Cannot query db: %w", err)
 	}
 
-	return userModel, nil
+	return user, nil
 }
 
-func (dao *UserDao) GetUserByUuid(uuid string) (*model.UserModel, error) {
-	row := dao.db.QueryRow("SELECT id, uuid, first_name, last_name, email, password FROM users where uuid = ?", uuid)
+func (dao *UserDao) GetUserByUuid(uuid string) (*model.User, error) {
+	row := dao.db.QueryRow(fmt.Sprintf("SELECT %s FROM users where uuid = ?", userSelectFields), uuid)
 
-	userModel, err := scanRowIntoUserModel(row)
+	user, err := scanRowToUser(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errorsx.NewNotFoundError("User", uuid)
@@ -52,42 +54,64 @@ func (dao *UserDao) GetUserByUuid(uuid string) (*model.UserModel, error) {
 		return nil, fmt.Errorf("Cannot query db: %w", err)
 	}
 
-	return userModel, nil
+	return user, nil
 }
 
-func scanRowIntoUserModel(rows *sql.Row) (*model.UserModel, error) {
-	userModel := &model.UserModel{}
+func (dao *UserDao) GetUsers() ([]model.User, error) {
+	rows, err := dao.db.Query(fmt.Sprintf("SELECT %s FROM users", userSelectFields))
 
-	err := rows.Scan(
-		&userModel.Id,
-		&userModel.Uuid,
-		&userModel.FirstName,
-		&userModel.LastName,
-		&userModel.Email,
-		&userModel.Password,
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+	defer rows.Close()
+
+	users, err := scanRowsToUsers(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func scanRowToUser(row *sql.Row) (*model.User, error) {
+	var user model.User
+
+	err := row.Scan(
+		&user.Id,
+		&user.Uuid,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Password,
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("Cannot scan user row into model: %w", err)
 	}
 
-	return userModel, nil
+	return &user, nil
 }
 
-func scanRowsIntoUserModel(rows *sql.Rows) (*model.UserModel, error) {
-	userModel := &model.UserModel{}
+func scanRowsToUsers(rows *sql.Rows) ([]model.User, error) {
+	var users []model.User
 
-	err := rows.Scan(
-		&userModel.Id,
-		&userModel.Uuid,
-		&userModel.FirstName,
-		&userModel.LastName,
-		&userModel.Email,
-	)
+	for rows.Next() {
+		var user model.User
+		err := rows.Scan(
+			&user.Id,
+			&user.Uuid,
+			&user.FirstName,
+			&user.LastName,
+			&user.Email,
+			&user.Password,
+		)
 
-	if err != nil {
-		return nil, fmt.Errorf("Cannot scan user row into model: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot scan user row into model: %w", err)
+		}
+
+		users = append(users, user)
 	}
 
-	return userModel, nil
+	return users, nil
 }

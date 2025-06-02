@@ -33,7 +33,7 @@ func (service *AuthService) login(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	userModel, err := service.userDao.GetUserByEmail(loginDto.Username)
+	user, err := service.userDao.GetUserByEmail(loginDto.Username)
 	if err != nil {
 		var notFoundError *errorsx.NotFoundError
 		if errors.As(err, &notFoundError) {
@@ -45,12 +45,12 @@ func (service *AuthService) login(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	if !utils.ComparePasswords(userModel.Password, loginDto.Password) {
+	if !utils.ComparePasswords(user.Password, loginDto.Password) {
 		utils.WriteError(writer, errorsx.NewBadRequestError("Incorrect username or password"))
 		return
 	}
 
-	token, err := utils.CreateToken(userModel)
+	token, err := utils.CreateToken(user)
 	if err != nil {
 		utils.WriteError(writer, err)
 	}
@@ -62,7 +62,7 @@ func (service *AuthService) login(writer http.ResponseWriter, request *http.Requ
 		Path:     "/",
 	}
 	http.SetCookie(writer, &cookie)
-	utils.WriteJson(writer, http.StatusOK, userModel.ToDto())
+	utils.WriteJson(writer, http.StatusOK, user.ToDto())
 }
 
 func (service *AuthService) logout(writer http.ResponseWriter, request *http.Request) {

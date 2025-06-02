@@ -5,7 +5,7 @@ import (
 	"help/dto"
 )
 
-type UserModel struct {
+type User struct {
 	Id        int
 	Uuid      uuid.UUID
 	FirstName string
@@ -14,8 +14,8 @@ type UserModel struct {
 	Password  string
 }
 
-func (user UserModel) ToDto() dto.UserDto {
-	return dto.UserDto{
+func (user User) ToDto() dto.UserGetDto {
+	return dto.UserGetDto{
 		Id:        user.Id,
 		Uuid:      user.Uuid.String(),
 		FirstName: user.FirstName,
@@ -24,8 +24,8 @@ func (user UserModel) ToDto() dto.UserDto {
 	}
 }
 
-func UserModelFromPostDto(dto dto.UserPostDto, password string) UserModel {
-	return UserModel{
+func UserFromPostDto(dto dto.UserPostDto, password string) User {
+	return User{
 		Uuid:      uuid.New(),
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,

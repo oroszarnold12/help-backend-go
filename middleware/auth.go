@@ -37,14 +37,14 @@ func (middleware *AuthMiddleware) MiddlewareFunc(handler http.Handler) http.Hand
 		claims := token.Claims.(jwt.MapClaims)
 		userUuid := claims[constant.UserUuidClaimKey].(string)
 
-		userModel, err := middleware.userDao.GetUserByUuid(userUuid)
+		user, err := middleware.userDao.GetUserByUuid(userUuid)
 		if err != nil {
 			utils.WriteError(writer, fmt.Errorf("%w: %v", errorsx.NewUnauthorizedError(), err))
 			return
 		}
 
 		ctx := request.Context()
-		ctx = context.WithValue(ctx, constant.UserContextKey, userModel)
+		ctx = context.WithValue(ctx, constant.UserContextKey, user)
 		request = request.WithContext(ctx)
 
 		handler.ServeHTTP(writer, request)
