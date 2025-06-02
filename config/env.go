@@ -9,22 +9,26 @@ import (
 )
 
 type env struct {
-	ApiPort    int
-	DbUser     string
-	DbPassword string
-	DbAddress  string
-	DbName     string
+	ApiPort              int
+	DbUser               string
+	DbPassword           string
+	DbAddress            string
+	DbName               string
+	JWTExpirationSeconds int
+	JWTSecret            string
 }
 
 func initEnvVariables() env {
 	godotenv.Load()
 
 	return env{
-		ApiPort:    getIntEnv("API_PORT", 8080),
-		DbUser:     getEnv("DB_USER", "development"),
-		DbPassword: getEnv("DB_PASSWORD", "db12345"),
-		DbName:     getEnv("DB_NAME", "help"),
-		DbAddress:  fmt.Sprintf("%s:%d", getEnv("DB_HOST", "localhost"), getIntEnv("DB_PORT", 3306)),
+		ApiPort:              getIntEnv("API_PORT", 8080),
+		DbUser:               getEnv("DB_USER", "development"),
+		DbPassword:           getEnv("DB_PASSWORD", "db12345"),
+		DbName:               getEnv("DB_NAME", "help"),
+		DbAddress:            fmt.Sprintf("%s:%d", getEnv("DB_HOST", "localhost"), getIntEnv("DB_PORT", 3306)),
+		JWTExpirationSeconds: getIntEnv("JWT_EXPIRATION_SECONDS", 24*60*60),
+		JWTSecret:            getEnv("JWT_SECRET", "4d065eb6-e9dc-4aed-8709-30dbbcd8b1a5"),
 	}
 }
 

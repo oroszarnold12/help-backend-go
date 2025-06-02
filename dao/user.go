@@ -26,12 +26,27 @@ func (dao *UserDao) CreateUser(user model.UserModel) error {
 }
 
 func (dao *UserDao) GetUserByEmail(email string) (*model.UserModel, error) {
-	row := dao.db.QueryRow("SELECT id, uuid, first_name, last_name, email FROM users where email = ?", email)
+	row := dao.db.QueryRow("SELECT id, uuid, first_name, last_name, email, password FROM users where email = ?", email)
 
 	userModel, err := scanRowIntoUserModel(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errorsx.NewNotFoundError("User", email)
+		}
+
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+
+	return userModel, nil
+}
+
+func (dao *UserDao) GetUserByUuid(uuid string) (*model.UserModel, error) {
+	row := dao.db.QueryRow("SELECT id, uuid, first_name, last_name, email, password FROM users where uuid = ?", uuid)
+
+	userModel, err := scanRowIntoUserModel(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errorsx.NewNotFoundError("User", uuid)
 		}
 
 		return nil, fmt.Errorf("Cannot query db: %w", err)
@@ -49,6 +64,7 @@ func scanRowIntoUserModel(rows *sql.Row) (*model.UserModel, error) {
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.Email,
+		&userModel.Password,
 	)
 
 	if err != nil {

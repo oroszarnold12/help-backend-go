@@ -22,9 +22,9 @@ func NewUserService(userDao *dao.UserDao) *UserService {
 	return &UserService{userDao: userDao}
 }
 
-func (service *UserService) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/user", service.getUserByEmail).Methods("GET")
-	router.HandleFunc("/persons", service.registerUsers).Methods("POST")
+func (service *UserService) RegisterRoutes(authorizedRouter *mux.Router) {
+	authorizedRouter.HandleFunc("/user", service.getUserByEmail).Methods("GET")
+	authorizedRouter.HandleFunc("/persons", service.registerUsers).Methods("POST")
 }
 
 func (service *UserService) getUserByEmail(writer http.ResponseWriter, request *http.Request) {
@@ -45,12 +45,7 @@ func (service *UserService) getUserByEmail(writer http.ResponseWriter, request *
 
 func (service *UserService) registerUsers(writer http.ResponseWriter, request *http.Request) {
 	var userPostDtos []dto.UserPostDto
-	if err := utils.ParseJSON(request, &userPostDtos); err != nil {
-		utils.WriteError(writer, errorsx.NewBadRequestError(err.Error()))
-		return
-	}
-
-	if err := utils.Validator.Var(userPostDtos, "dive"); err != nil {
+	if err := utils.ParseAndValidateSlice(request, &userPostDtos); err != nil {
 		utils.WriteError(writer, errorsx.NewBadRequestError(err.Error()))
 		return
 	}

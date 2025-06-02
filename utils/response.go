@@ -27,7 +27,7 @@ func WriteError(writer http.ResponseWriter, error error) {
 
 	var statusCoder errorsx.StatusCoder
 	if errors.As(error, &statusCoder) {
-		WriteJson(writer, statusCoder.StatusCode(), map[string]string{"error": error.Error()})
+		WriteJson(writer, statusCoder.StatusCode(), map[string]string{"error": statusCoder.Error()})
 	} else {
 		WriteJson(writer, http.StatusInternalServerError, map[string]string{"error": "Internal server error, please try again later"})
 	}
