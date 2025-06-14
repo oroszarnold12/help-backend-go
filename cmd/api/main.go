@@ -32,6 +32,8 @@ func (api *Api) Run() error {
 	authorizedRouter := router.NewRoute().Subrouter()
 
 	userDao := dao.NewUserDao(api.db)
+	courseDao := dao.NewCourseDao(api.db)
+	participationDao := dao.NewPariticipationDao(api.db)
 
 	loggingMiddleware := middleware.NewLoggingMiddleware()
 	authMiddleware := middleware.NewAuthMiddleware(userDao)
@@ -48,6 +50,12 @@ func (api *Api) Run() error {
 
 	statusService := service.NewStatusService()
 	statusService.RegisterRoutes(publicRouter)
+
+	courseService := service.NewCourseService(courseDao)
+	courseService.RegisterRoutes(authorizedRouter)
+
+	participationService := service.NewParticipaionService(participationDao)
+	participationService.RegisterRoutes(authorizedRouter)
 
 	handler := cors.New(cors.Options{AllowedOrigins: []string{"http://localhost:8100"}, AllowCredentials: true}).Handler(router)
 	log.Println("Listening on port", api.port)
