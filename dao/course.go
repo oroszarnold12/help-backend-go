@@ -2,8 +2,11 @@ package dao
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"help/errorsx"
 	"help/model"
+	"strconv"
 )
 
 const courseSelectFields = `
@@ -43,6 +46,32 @@ func (dao *CourseDao) GetCoursesOfUser(userId int) ([]model.Course, error) {
 	}
 
 	return courses, nil
+}
+
+func (dao *CourseDao) GetCourseOfUser(courseId int, userId int) (*model.Course, error) {
+	row := dao.db.QueryRow(
+		fmt.Sprintf(`
+			SELECT %s 
+			FROM participations p 
+			JOIN courses c ON c.id = p.course_id 
+			JOIN users u on c.teacher_id = u.id 
+			WHERE p.user_id = ? AND c.id = ?`,
+			courseSelectFields,
+		),
+		userId,
+		courseId,
+	)
+
+	course, err := scanRowToCourse(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errorsx.NewNotFoundError("Course", strconv.Itoa(courseId))
+		}
+
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+
+	return course, nil
 }
 
 func scanRowToCourse(row *sql.Row) (*model.Course, error) {
