@@ -46,7 +46,7 @@ func (api *Api) Run() error {
 	userService.RegisterRoutes(authorizedRouter)
 
 	authService := service.NewAuthService(userDao)
-	authService.RegisterRoutes(publicRouter, authorizedRouter)
+	authService.RegisterRoutes(publicRouter)
 
 	statusService := service.NewStatusService()
 	statusService.RegisterRoutes(publicRouter)

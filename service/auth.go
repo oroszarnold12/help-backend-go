@@ -21,9 +21,9 @@ func NewAuthService(userDao *dao.UserDao) *AuthService {
 	return &AuthService{userDao: userDao}
 }
 
-func (service *AuthService) RegisterRoutes(publicRouter *mux.Router, authorizedRouter *mux.Router) {
+func (service *AuthService) RegisterRoutes(publicRouter *mux.Router) {
 	publicRouter.HandleFunc("/auth/login", service.login).Methods("POST")
-	authorizedRouter.HandleFunc("/auth/logout", service.logout).Methods("GET")
+	publicRouter.HandleFunc("/auth/logout", service.logout).Methods("GET")
 }
 
 func (service *AuthService) login(writer http.ResponseWriter, request *http.Request) {
@@ -66,13 +66,12 @@ func (service *AuthService) login(writer http.ResponseWriter, request *http.Requ
 }
 
 func (service *AuthService) logout(writer http.ResponseWriter, request *http.Request) {
-	cookie, err := utils.GetCookieFromRequest(request, constant.AuthCookieName)
-	if err != nil {
-		utils.WriteError(writer, fmt.Errorf("%w: %v", errorsx.NewUnauthorizedError(), err))
-		return
+	cookie := http.Cookie{
+		Name:     constant.AuthCookieName,
+		HttpOnly: true,
+		Path:     "/",
+		MaxAge:   -1,
 	}
-	cookie.Path = "/"
-	cookie.MaxAge = -1
 
-	http.SetCookie(writer, cookie)
+	http.SetCookie(writer, &cookie)
 }
