@@ -1,10 +1,8 @@
 package service
 
 import (
-	"help/constant"
 	"help/dao"
 	"help/dto"
-	"help/model"
 	"help/utils"
 	"net/http"
 
@@ -24,7 +22,7 @@ func (service *CourseSerivce) RegisterRoutes(authorizedRouter *mux.Router) {
 }
 
 func (service *CourseSerivce) getCourses(writer http.ResponseWriter, request *http.Request) {
-	user := request.Context().Value(constant.UserContextKey).(*model.User)
+	user := utils.GetCurrentUser(request)
 
 	courses, err := service.courseDao.GetCoursesOfUser(user.Id)
 	if err != nil {
@@ -32,10 +30,5 @@ func (service *CourseSerivce) getCourses(writer http.ResponseWriter, request *ht
 		return
 	}
 
-	courseDtos := make([]dto.ThinCourseGetDto, len(courses))
-	for index := range courses {
-		courseDtos[index] = courses[index].ToThinDto()
-	}
-
-	utils.WriteJson(writer, http.StatusOK, map[string][]dto.ThinCourseGetDto{"courses": courseDtos})
+	utils.WriteJson(writer, http.StatusOK, map[string][]dto.ThinCourseGetDto{"courses": dto.ModelsToThinDtos(courses)})
 }

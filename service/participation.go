@@ -1,10 +1,8 @@
 package service
 
 import (
-	"help/constant"
 	"help/dao"
 	"help/dto"
-	"help/model"
 	"help/utils"
 	"net/http"
 
@@ -24,7 +22,7 @@ func (service *ParticipationService) RegisterRoutes(authorizedRouter *mux.Router
 }
 
 func (service *ParticipationService) getParticipations(writer http.ResponseWriter, request *http.Request) {
-	user := request.Context().Value(constant.UserContextKey).(*model.User)
+	user := utils.GetCurrentUser(request)
 
 	participations, err := service.participationDao.GetParticipationsOfUser(user.Id)
 	if err != nil {
@@ -32,10 +30,5 @@ func (service *ParticipationService) getParticipations(writer http.ResponseWrite
 		return
 	}
 
-	participationDtos := make([]dto.PariticipationGetDto, len(participations))
-	for index := range participations {
-		participationDtos[index] = participations[index].ToDto()
-	}
-
-	utils.WriteJson(writer, http.StatusOK, participationDtos)
+	utils.WriteJson(writer, http.StatusOK, dto.ModelsToDtos(participations))
 }

@@ -3,13 +3,13 @@ package service
 import (
 	"errors"
 	"fmt"
-	"help/constant"
 	"help/dao"
 	"help/dto"
 	"help/errorsx"
 	"help/model"
 	"help/utils"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -30,13 +30,13 @@ func (service *UserService) RegisterRoutes(authorizedRouter *mux.Router) {
 }
 
 func (service *UserService) getCurrentUser(writer http.ResponseWriter, request *http.Request) {
-	user := request.Context().Value(constant.UserContextKey).(*model.User)
+	user := utils.GetCurrentUser(request)
 
 	utils.WriteJson(writer, http.StatusOK, user.ToDto())
 }
 
 func (service *UserService) getUsers(writer http.ResponseWriter, request *http.Request) {
-	currentUser := request.Context().Value(constant.UserContextKey).(*model.User)
+	currentUser := utils.GetCurrentUser(request)
 	isAdmin := currentUser.Role == model.RoleAdmin
 
 	users, err := service.userDao.GetUsers()
@@ -44,24 +44,13 @@ func (service *UserService) getUsers(writer http.ResponseWriter, request *http.R
 		utils.WriteError(writer, err)
 	}
 
-	if isAdmin {
-		userDtos := make([]dto.UserGetDto, len(users))
-		for index, user := range users {
-			userDtos[index] = user.ToDto()
-		}
-
-		utils.WriteJson(writer, http.StatusOK, map[string][]dto.UserGetDto{"persons": userDtos})
-	} else {
-		var nonAdminUserDtos []dto.UserGetDto
-
-		for _, user := range users {
-			if user.Role != model.RoleAdmin {
-				nonAdminUserDtos = append(nonAdminUserDtos, user.ToDto())
-			}
-		}
-
-		utils.WriteJson(writer, http.StatusOK, map[string][]dto.UserGetDto{"persons": nonAdminUserDtos})
+	if !isAdmin {
+		users = slices.DeleteFunc(users, func(user model.User) bool {
+			return user.Role == model.RoleAdmin
+		})
 	}
+
+	utils.WriteJson(writer, http.StatusOK, map[string][]dto.UserGetDto{"persons": dto.ModelsToDtos(users)})
 }
 
 func (service *UserService) registerUsers(writer http.ResponseWriter, request *http.Request) {

@@ -3,6 +3,8 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"help/constant"
+	"help/model"
 	"net/http"
 )
 
@@ -49,4 +51,9 @@ func ParseAndValidateStruct(request *http.Request, target any) error {
 	}
 
 	return nil
+}
+
+func GetCurrentUser(request *http.Request) *model.User {
+	user := request.Context().Value(constant.UserContextKey).(*model.User)
+	return user
 }
