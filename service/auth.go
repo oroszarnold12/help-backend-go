@@ -22,8 +22,8 @@ func NewAuthService(userDao *dao.UserDao) *AuthService {
 }
 
 func (service *AuthService) RegisterRoutes(publicRouter *mux.Router) {
-	publicRouter.HandleFunc("/auth/login", service.login).Methods("POST")
-	publicRouter.HandleFunc("/auth/logout", service.logout).Methods("GET")
+	publicRouter.HandleFunc("/auth/login", service.login).Methods(http.MethodPost)
+	publicRouter.HandleFunc("/auth/logout", service.logout).Methods(http.MethodGet)
 }
 
 func (service *AuthService) login(writer http.ResponseWriter, request *http.Request) {

@@ -5,6 +5,7 @@ import (
 	"help/dao"
 	"help/dto"
 	"help/errorsx"
+	"help/middleware"
 	"help/utils"
 	"net/http"
 	"strconv"
@@ -20,9 +21,9 @@ func NewCourseService(courseDao *dao.CourseDao) *CourseSerivce {
 	return &CourseSerivce{courseDao: courseDao}
 }
 
-func (service *CourseSerivce) RegisterRoutes(authorizedRouter *mux.Router) {
-	authorizedRouter.HandleFunc("/courses", service.getCourses).Methods("GET")
-	authorizedRouter.HandleFunc("/courses/{id}", service.getCourse).Methods("GET")
+func (service *CourseSerivce) RegisterRoutes(authMiddleware *middleware.AuthMiddleware, authorizedRouter *mux.Router) {
+	authorizedRouter.HandleFunc("/courses", service.getCourses).Methods(http.MethodGet)
+	authorizedRouter.HandleFunc("/courses/{id}", service.getCourse).Methods(http.MethodGet)
 }
 
 func (service *CourseSerivce) getCourses(writer http.ResponseWriter, request *http.Request) {

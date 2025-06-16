@@ -18,7 +18,7 @@ func NewParticipaionService(participationDao *dao.ParticipationDao) *Participati
 }
 
 func (service *ParticipationService) RegisterRoutes(authorizedRouter *mux.Router) {
-	authorizedRouter.HandleFunc("/participations", service.getParticipations).Methods("GET")
+	authorizedRouter.HandleFunc("/participations", service.getParticipations).Methods(http.MethodGet)
 }
 
 func (service *ParticipationService) getParticipations(writer http.ResponseWriter, request *http.Request) {

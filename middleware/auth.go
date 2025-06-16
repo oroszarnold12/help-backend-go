@@ -6,18 +6,30 @@ import (
 	"help/constant"
 	"help/dao"
 	"help/errorsx"
+	"help/model"
 	"help/utils"
 	"net/http"
+	"slices"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthMiddleware struct {
-	userDao *dao.UserDao
+	userDao      *dao.UserDao
+	allowedRoles map[string][]model.Role
 }
 
 func NewAuthMiddleware(userDao *dao.UserDao) *AuthMiddleware {
-	return &AuthMiddleware{userDao: userDao}
+	return &AuthMiddleware{userDao: userDao, allowedRoles: make(map[string][]model.Role)}
+}
+
+func (middleware *AuthMiddleware) AllowRoles(path string, method string, roles []model.Role) {
+	key := allowedRolesKey(path, method)
+	if _, ok := middleware.allowedRoles[key]; ok {
+		panic(fmt.Sprintf("Cannot set allowed roles to the same path and method '%s' multiple times", key))
+	}
+
+	middleware.allowedRoles[key] = roles
 }
 
 func (middleware *AuthMiddleware) MiddlewareFunc(handler http.Handler) http.Handler {
@@ -43,10 +55,21 @@ func (middleware *AuthMiddleware) MiddlewareFunc(handler http.Handler) http.Hand
 			return
 		}
 
+		if roles, ok := middleware.allowedRoles[allowedRolesKey(request.URL.Path, request.Method)]; ok {
+			if !slices.Contains(roles, user.Role) {
+				utils.WriteError(writer, fmt.Errorf("%w: User '%v' does not have any of the allowed roles: %v", errorsx.NewForbiddenError(), user.Email, roles))
+				return
+			}
+		}
+
 		ctx := request.Context()
 		ctx = context.WithValue(ctx, constant.UserContextKey, user)
 		request = request.WithContext(ctx)
 
 		handler.ServeHTTP(writer, request)
 	})
+}
+
+func allowedRolesKey(path string, method string) string {
+	return fmt.Sprintf("%s: %s", method, path)
 }

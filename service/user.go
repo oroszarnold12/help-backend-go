@@ -6,6 +6,7 @@ import (
 	"help/dao"
 	"help/dto"
 	"help/errorsx"
+	"help/middleware"
 	"help/model"
 	"help/utils"
 	"net/http"
@@ -23,10 +24,13 @@ func NewUserService(userDao *dao.UserDao) *UserService {
 	return &UserService{userDao: userDao}
 }
 
-func (service *UserService) RegisterRoutes(authorizedRouter *mux.Router) {
-	authorizedRouter.HandleFunc("/user", service.getCurrentUser).Methods("GET")
-	authorizedRouter.HandleFunc("/persons", service.registerUsers).Methods("POST")
-	authorizedRouter.HandleFunc("/persons", service.getUsers).Methods("GET")
+func (service *UserService) RegisterRoutes(authMiddleware *middleware.AuthMiddleware, authorizedRouter *mux.Router) {
+	authorizedRouter.HandleFunc("/user", service.getCurrentUser).Methods(http.MethodGet)
+
+	authorizedRouter.HandleFunc("/persons", service.registerUsers).Methods(http.MethodPost)
+	authMiddleware.AllowRoles("/persons", http.MethodPost, []model.Role{model.RoleAdmin})
+
+	authorizedRouter.HandleFunc("/persons", service.getUsers).Methods(http.MethodGet)
 }
 
 func (service *UserService) getCurrentUser(writer http.ResponseWriter, request *http.Request) {

@@ -43,7 +43,7 @@ func (api *Api) Run() error {
 	authorizedRouter.Use(authMiddleware.MiddlewareFunc)
 
 	userService := service.NewUserService(userDao)
-	userService.RegisterRoutes(authorizedRouter)
+	userService.RegisterRoutes(authMiddleware, authorizedRouter)
 
 	authService := service.NewAuthService(userDao)
 	authService.RegisterRoutes(publicRouter)
@@ -52,7 +52,7 @@ func (api *Api) Run() error {
 	statusService.RegisterRoutes(publicRouter)
 
 	courseService := service.NewCourseService(courseDao)
-	courseService.RegisterRoutes(authorizedRouter)
+	courseService.RegisterRoutes(authMiddleware, authorizedRouter)
 
 	participationService := service.NewParticipaionService(participationDao)
 	participationService.RegisterRoutes(authorizedRouter)
