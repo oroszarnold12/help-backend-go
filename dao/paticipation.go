@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"help/model"
+
+	"github.com/google/uuid"
 )
 
 const participationSelectFields = `
@@ -44,6 +46,15 @@ func (dao *ParticipationDao) GetParticipationsOfUser(userId int) ([]model.Partic
 	}
 
 	return participations, nil
+}
+
+func (dao *ParticipationDao) CreateParticipation(userId int, courseId int) error {
+	_, err := dao.db.Exec("INSERT INTO participations (uuid, user_id, course_id, show_on_dashboard) VALUES (?, ?, ?, ?)", uuid.New(), userId, courseId, true)
+	if err != nil {
+		return fmt.Errorf("Cannot exec statement: %w", err)
+	}
+
+	return nil
 }
 
 func scanRowsToParticipations(rows *sql.Rows) ([]model.Participation, error) {

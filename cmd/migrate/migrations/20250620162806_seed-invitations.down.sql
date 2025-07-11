@@ -1,0 +1,6 @@
+DELETE FROM invitations WHERE uuid IN (
+  'ccd82382-3097-41a3-b800-ddd3027dfe30',
+  '4e007a82-4dfd-4099-9285-190d8dfc4794',
+  '224fd240-ff89-4efa-b86b-be663aa21450',
+  'd79663f3-0456-4798-b894-29587f2686c3'
+);

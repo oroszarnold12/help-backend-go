@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS participations (
   `show_on_dashboard` BOOLEAN NOT NULL,
 
   CONSTRAINT fk_participation_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-  CONSTRAINT fk_participation_person FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  CONSTRAINT fk_participation_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
