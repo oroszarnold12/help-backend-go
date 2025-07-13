@@ -2,16 +2,18 @@ package dao
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"help/errorsx"
 	"help/model"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 const courseSelectFields = `
 	c.id, c.uuid, c.name, c.long_name, c.description,
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password,
+	a.id, a.uuid, a.name, a.content, a.date
 `
 
 type CourseDao struct {
@@ -29,6 +31,7 @@ func (dao *CourseDao) GetCoursesOfUser(userId int) ([]model.Course, error) {
 			FROM participations p 
 			JOIN courses c ON c.id = p.course_id 
 			JOIN users u on c.teacher_id = u.id 
+			LEFT JOIN announcements a on c.id = a.course_id
 			WHERE p.user_id = ?`,
 			courseSelectFields,
 		),
@@ -49,12 +52,13 @@ func (dao *CourseDao) GetCoursesOfUser(userId int) ([]model.Course, error) {
 }
 
 func (dao *CourseDao) GetCourseOfUser(courseId int, userId int) (*model.Course, error) {
-	row := dao.db.QueryRow(
+	rows, err := dao.db.Query(
 		fmt.Sprintf(`
 			SELECT %s 
 			FROM participations p 
 			JOIN courses c ON c.id = p.course_id 
 			JOIN users u on c.teacher_id = u.id 
+			LEFT JOIN announcements a on c.id = a.course_id
 			WHERE p.user_id = ? AND c.id = ?`,
 			courseSelectFields,
 		),
@@ -62,52 +66,33 @@ func (dao *CourseDao) GetCourseOfUser(courseId int, userId int) (*model.Course, 
 		courseId,
 	)
 
-	course, err := scanRowToCourse(row)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errorsx.NewNotFoundError("Course", strconv.Itoa(courseId))
-		}
-
 		return nil, fmt.Errorf("Cannot query db: %w", err)
 	}
+	defer rows.Close()
 
-	return course, nil
-}
-
-func scanRowToCourse(row *sql.Row) (*model.Course, error) {
-	var course model.Course
-	var teacher model.User
-
-	err := row.Scan(
-		&course.Id,
-		&course.Uuid,
-		&course.Name,
-		&course.LongName,
-		&course.Description,
-		&teacher.Id,
-		&teacher.Uuid,
-		&teacher.FirstName,
-		&teacher.LastName,
-		&teacher.Email,
-		&teacher.Role,
-		&teacher.Password,
-	)
-
+	courses, err := scanRowsToCourses(rows)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot scan course row into model: %w", err)
+		return nil, err
 	}
 
-	course.Teacher = teacher
+	if len(courses) == 0 {
+		return nil, errorsx.NewNotFoundError("Course", strconv.Itoa(courseId))
+	}
 
-	return &course, nil
+	return &courses[0], nil
 }
 
 func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
-	var courses []model.Course
+	courseMap := make(map[int]*model.Course)
 
 	for rows.Next() {
 		var course model.Course
 		var teacher model.User
+
+		var announcementId sql.NullInt64
+		var announcementUuid, announcementName, announcementContent sql.NullString
+		var announcementDate sql.NullTime
 
 		err := rows.Scan(
 			&course.Id,
@@ -122,15 +107,42 @@ func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
 			&teacher.Email,
 			&teacher.Role,
 			&teacher.Password,
+			&announcementId,
+			&announcementUuid,
+			&announcementName,
+			&announcementContent,
+			&announcementDate,
 		)
 
 		if err != nil {
 			return nil, fmt.Errorf("Cannot scan course row into model: %w", err)
 		}
 
-		course.Teacher = teacher
+		existingCourse, ok := courseMap[course.Id]
 
-		courses = append(courses, course)
+		if !ok {
+			course.Teacher = teacher
+			course.Announcements = []model.Announcement{}
+			courseMap[course.Id] = &course
+			existingCourse = &course
+		}
+
+		if announcementId.Valid {
+			announcement := model.Announcement{
+				Id:      int(announcementId.Int64),
+				Uuid:    uuid.MustParse(announcementUuid.String),
+				Name:    announcementName.String,
+				Date:    announcementDate.Time,
+				Content: announcementContent.String,
+			}
+
+			existingCourse.Announcements = append(existingCourse.Announcements, announcement)
+		}
+	}
+
+	courses := []model.Course{}
+	for _, course := range courseMap {
+		courses = append(courses, *course)
 	}
 
 	return courses, nil

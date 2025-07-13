@@ -19,6 +19,7 @@ func main() {
 		DBName:               config.Env.DbName,
 		Addr:                 config.Env.DbAddress,
 		AllowNativePasswords: true,
+		ParseTime:            true,
 	}
 	mySqlDb, err := db.NewMySqlDb(dbConfig)
 	if err != nil {
