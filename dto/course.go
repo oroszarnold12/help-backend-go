@@ -7,6 +7,7 @@ type CourseGetDto struct {
 	LongName      string                   `json:"longName"`
 	Descirption   string                   `json:"description"`
 	Teacher       UserGetDto               `json:"teacher"`
+	Assignments   []ThinAssignmentGetDto   `json:"assignments"`
 	Announcements []ThinAnnouncementGetDto `json:"announcements"`
 }
 

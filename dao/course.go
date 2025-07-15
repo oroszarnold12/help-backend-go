@@ -6,14 +6,19 @@ import (
 	"help/errorsx"
 	"help/model"
 	"strconv"
-
-	"github.com/google/uuid"
 )
 
 const courseSelectFields = `
 	c.id, c.uuid, c.name, c.long_name, c.description,
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password,
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password
+`
+
+const announcementFields = `
 	a.id, a.uuid, a.name, a.content, a.date
+`
+
+const assignmentFields = `
+	a.id, a.uuid, a.name, a.due_date, a.points, a.published
 `
 
 type CourseDao struct {
@@ -31,7 +36,6 @@ func (dao *CourseDao) GetCoursesOfUser(userId int) ([]model.Course, error) {
 			FROM participations p 
 			JOIN courses c ON c.id = p.course_id 
 			JOIN users u on c.teacher_id = u.id 
-			LEFT JOIN announcements a on c.id = a.course_id
 			WHERE p.user_id = ?`,
 			courseSelectFields,
 		),
@@ -48,6 +52,11 @@ func (dao *CourseDao) GetCoursesOfUser(userId int) ([]model.Course, error) {
 		return nil, err
 	}
 
+	courses, err = completeCourseModel(dao, courses)
+	if err != nil {
+		return nil, err
+	}
+
 	return courses, nil
 }
 
@@ -58,7 +67,6 @@ func (dao *CourseDao) GetCourseOfUser(courseId int, userId int) (*model.Course, 
 			FROM participations p 
 			JOIN courses c ON c.id = p.course_id 
 			JOIN users u on c.teacher_id = u.id 
-			LEFT JOIN announcements a on c.id = a.course_id
 			WHERE p.user_id = ? AND c.id = ?`,
 			courseSelectFields,
 		),
@@ -76,6 +84,11 @@ func (dao *CourseDao) GetCourseOfUser(courseId int, userId int) (*model.Course, 
 		return nil, err
 	}
 
+	courses, err = completeCourseModel(dao, courses)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(courses) == 0 {
 		return nil, errorsx.NewNotFoundError("Course", strconv.Itoa(courseId))
 	}
@@ -83,16 +96,129 @@ func (dao *CourseDao) GetCourseOfUser(courseId int, userId int) (*model.Course, 
 	return &courses[0], nil
 }
 
+func (dao *CourseDao) getAssignmentsOfCourse(courseId int) ([]model.Assignment, error) {
+	rows, err := dao.db.Query(
+		fmt.Sprintf(`
+			SELECT %s
+			FROM assignments a
+			WHERE a.course_id = ?
+			`,
+			assignmentFields,
+		),
+		courseId,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+	defer rows.Close()
+
+	assignemnts, err := scanRowstoAssignments(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return assignemnts, nil
+}
+
+func (dao *CourseDao) getAnnouncementsOfCourse(courseId int) ([]model.Announcement, error) {
+	rows, err := dao.db.Query(
+		fmt.Sprintf(`
+			SELECT %s
+			FROM announcements a
+			WHERE a.course_id = ?
+			`,
+			announcementFields,
+		),
+		courseId,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+	defer rows.Close()
+
+	announcements, err := scanRowstoAnnouncement(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return announcements, nil
+}
+
+func completeCourseModel(dao *CourseDao, courses []model.Course) ([]model.Course, error) {
+	for index := range courses {
+		courseId := courses[index].Id
+		assignments, err := dao.getAssignmentsOfCourse(courseId)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot get assignments of course '%d': %w", courseId, err)
+		}
+
+		announcements, err := dao.getAnnouncementsOfCourse(courseId)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot get announcements of course '%d': %w", courseId, err)
+		}
+
+		courses[index].Assignments = assignments
+		courses[index].Announcements = announcements
+	}
+
+	return courses, nil
+}
+
+func scanRowstoAssignments(rows *sql.Rows) ([]model.Assignment, error) {
+	var assignments []model.Assignment
+
+	for rows.Next() {
+		var assignment model.Assignment
+		err := rows.Scan(
+			&assignment.Id,
+			&assignment.Uuid,
+			&assignment.Name,
+			&assignment.DueDate,
+			&assignment.Points,
+			&assignment.Published,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("Cannot scan assignment rows into model: %w", err)
+		}
+
+		assignments = append(assignments, assignment)
+	}
+
+	return assignments, nil
+}
+
+func scanRowstoAnnouncement(rows *sql.Rows) ([]model.Announcement, error) {
+	var announcements []model.Announcement
+
+	for rows.Next() {
+		var announcement model.Announcement
+		err := rows.Scan(
+			&announcement.Id,
+			&announcement.Uuid,
+			&announcement.Name,
+			&announcement.Content,
+			&announcement.Date,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("Cannot scan announcement rows into model: %w", err)
+		}
+
+		announcements = append(announcements, announcement)
+	}
+
+	return announcements, nil
+}
+
 func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
-	courseMap := make(map[int]*model.Course)
+	var courses []model.Course
 
 	for rows.Next() {
 		var course model.Course
 		var teacher model.User
-
-		var announcementId sql.NullInt64
-		var announcementUuid, announcementName, announcementContent sql.NullString
-		var announcementDate sql.NullTime
 
 		err := rows.Scan(
 			&course.Id,
@@ -107,42 +233,13 @@ func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
 			&teacher.Email,
 			&teacher.Role,
 			&teacher.Password,
-			&announcementId,
-			&announcementUuid,
-			&announcementName,
-			&announcementContent,
-			&announcementDate,
 		)
 
 		if err != nil {
 			return nil, fmt.Errorf("Cannot scan course row into model: %w", err)
 		}
 
-		existingCourse, ok := courseMap[course.Id]
-
-		if !ok {
-			course.Teacher = teacher
-			course.Announcements = []model.Announcement{}
-			courseMap[course.Id] = &course
-			existingCourse = &course
-		}
-
-		if announcementId.Valid {
-			announcement := model.Announcement{
-				Id:      int(announcementId.Int64),
-				Uuid:    uuid.MustParse(announcementUuid.String),
-				Name:    announcementName.String,
-				Date:    announcementDate.Time,
-				Content: announcementContent.String,
-			}
-
-			existingCourse.Announcements = append(existingCourse.Announcements, announcement)
-		}
-	}
-
-	courses := []model.Course{}
-	for _, course := range courseMap {
-		courses = append(courses, *course)
+		courses = append(courses, course)
 	}
 
 	return courses, nil

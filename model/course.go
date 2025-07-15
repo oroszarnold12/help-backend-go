@@ -12,6 +12,7 @@ type Course struct {
 	LongName      string
 	Description   string
 	Teacher       User
+	Assignments   []Assignment
 	Announcements []Announcement
 }
 
@@ -23,6 +24,7 @@ func (course Course) ToDto() dto.CourseGetDto {
 		LongName:      course.LongName,
 		Descirption:   course.Description,
 		Teacher:       course.Teacher.ToDto(),
+		Assignments:   dto.ModelsToThinDtos(course.Assignments),
 		Announcements: dto.ModelsToThinDtos(course.Announcements),
 	}
 }
