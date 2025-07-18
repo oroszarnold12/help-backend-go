@@ -14,6 +14,7 @@ type Course struct {
 	Teacher       User
 	Assignments   []Assignment
 	Announcements []Announcement
+	Discussions   []Discussion
 }
 
 func (course Course) ToDto() dto.CourseGetDto {
@@ -26,6 +27,7 @@ func (course Course) ToDto() dto.CourseGetDto {
 		Teacher:       course.Teacher.ToDto(),
 		Assignments:   dto.ModelsToThinDtos(course.Assignments),
 		Announcements: dto.ModelsToThinDtos(course.Announcements),
+		Discussions:   dto.ModelsToThinDtos(course.Discussions),
 	}
 }
 

@@ -21,6 +21,11 @@ const assignmentFields = `
 	a.id, a.uuid, a.name, a.due_date, a.points, a.published
 `
 
+const discussionFields = `
+	d.id, d.uuid, d.name, d.date,
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password
+`
+
 type CourseDao struct {
 	db *sql.DB
 }
@@ -113,7 +118,7 @@ func (dao *CourseDao) getAssignmentsOfCourse(courseId int) ([]model.Assignment, 
 	}
 	defer rows.Close()
 
-	assignemnts, err := scanRowstoAssignments(rows)
+	assignemnts, err := scanRowsToAssignments(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -138,12 +143,38 @@ func (dao *CourseDao) getAnnouncementsOfCourse(courseId int) ([]model.Announceme
 	}
 	defer rows.Close()
 
-	announcements, err := scanRowstoAnnouncement(rows)
+	announcements, err := scanRowsToAnnouncements(rows)
 	if err != nil {
 		return nil, err
 	}
 
 	return announcements, nil
+}
+
+func (dao *CourseDao) getDiscussionsOfCourse(courseId int) ([]model.Discussion, error) {
+	rows, err := dao.db.Query(
+		fmt.Sprintf(`
+			SELECT %s
+			FROM discussions d
+			JOIN users u on u.id = d.creator_id
+			WHERE d.course_id = ?
+			`,
+			discussionFields,
+		),
+		courseId,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+	defer rows.Close()
+
+	discussions, err := scanRowsToDiscussions(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return discussions, nil
 }
 
 func completeCourseModel(dao *CourseDao, courses []model.Course) ([]model.Course, error) {
@@ -159,14 +190,20 @@ func completeCourseModel(dao *CourseDao, courses []model.Course) ([]model.Course
 			return nil, fmt.Errorf("Cannot get announcements of course '%d': %w", courseId, err)
 		}
 
+		discussions, err := dao.getDiscussionsOfCourse(courseId)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot get discussions of course '%d': %w", courseId, err)
+		}
+
 		courses[index].Assignments = assignments
 		courses[index].Announcements = announcements
+		courses[index].Discussions = discussions
 	}
 
 	return courses, nil
 }
 
-func scanRowstoAssignments(rows *sql.Rows) ([]model.Assignment, error) {
+func scanRowsToAssignments(rows *sql.Rows) ([]model.Assignment, error) {
 	var assignments []model.Assignment
 
 	for rows.Next() {
@@ -190,7 +227,7 @@ func scanRowstoAssignments(rows *sql.Rows) ([]model.Assignment, error) {
 	return assignments, nil
 }
 
-func scanRowstoAnnouncement(rows *sql.Rows) ([]model.Announcement, error) {
+func scanRowsToAnnouncements(rows *sql.Rows) ([]model.Announcement, error) {
 	var announcements []model.Announcement
 
 	for rows.Next() {
@@ -211,6 +248,37 @@ func scanRowstoAnnouncement(rows *sql.Rows) ([]model.Announcement, error) {
 	}
 
 	return announcements, nil
+}
+
+func scanRowsToDiscussions(rows *sql.Rows) ([]model.Discussion, error) {
+	var discussions []model.Discussion
+
+	for rows.Next() {
+		var discussion model.Discussion
+		var creator model.User
+
+		err := rows.Scan(
+			&discussion.Id,
+			&discussion.Uuid,
+			&discussion.Name,
+			&discussion.Date,
+			&creator.Id,
+			&creator.Uuid,
+			&creator.FirstName,
+			&creator.LastName,
+			&creator.Email,
+			&creator.Role,
+			&creator.Password,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("Cannot scan discussion rows into model: %w", err)
+		}
+
+		discussions = append(discussions, discussion)
+	}
+
+	return discussions, nil
 }
 
 func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
