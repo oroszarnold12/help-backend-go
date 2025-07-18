@@ -10,6 +10,7 @@ type CourseGetDto struct {
 	Assignments   []ThinAssignmentGetDto   `json:"assignments"`
 	Announcements []ThinAnnouncementGetDto `json:"announcements"`
 	Discussions   []ThinDiscussionGetDto   `json:"discussions"`
+	Quizzes       []ThingQuizGetDto        `json:"quizzes"`
 }
 
 type ThinCourseGetDto struct {

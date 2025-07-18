@@ -26,6 +26,10 @@ const discussionFields = `
 	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password
 `
 
+const quizFields = `
+	q.id, q.uuid, q.name, q.due_date, q.points, q.published
+`
+
 type CourseDao struct {
 	db *sql.DB
 }
@@ -177,6 +181,31 @@ func (dao *CourseDao) getDiscussionsOfCourse(courseId int) ([]model.Discussion, 
 	return discussions, nil
 }
 
+func (dao *CourseDao) getQuizzesOfCourse(courseId int) ([]model.Quiz, error) {
+	rows, err := dao.db.Query(
+		fmt.Sprintf(`
+			SELECT %s
+			FROM quizzes q
+			WHERE q.course_id = ?
+			`,
+			quizFields,
+		),
+		courseId,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+	defer rows.Close()
+
+	quizzes, err := scanRowsToQuizzes(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return quizzes, nil
+}
+
 func completeCourseModel(dao *CourseDao, courses []model.Course) ([]model.Course, error) {
 	for index := range courses {
 		courseId := courses[index].Id
@@ -195,9 +224,15 @@ func completeCourseModel(dao *CourseDao, courses []model.Course) ([]model.Course
 			return nil, fmt.Errorf("Cannot get discussions of course '%d': %w", courseId, err)
 		}
 
+		quizzes, err := dao.getQuizzesOfCourse(courseId)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot get quizzes of course '%d': %w", courseId, err)
+		}
+
 		courses[index].Assignments = assignments
 		courses[index].Announcements = announcements
 		courses[index].Discussions = discussions
+		courses[index].Quizzes = quizzes
 	}
 
 	return courses, nil
@@ -279,6 +314,31 @@ func scanRowsToDiscussions(rows *sql.Rows) ([]model.Discussion, error) {
 	}
 
 	return discussions, nil
+}
+
+func scanRowsToQuizzes(rows *sql.Rows) ([]model.Quiz, error) {
+	var quizzes []model.Quiz
+
+	for rows.Next() {
+		var quiz model.Quiz
+
+		err := rows.Scan(
+			&quiz.Id,
+			&quiz.Uuid,
+			&quiz.Name,
+			&quiz.DueDate,
+			&quiz.Points,
+			&quiz.Published,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("Cannot scan quiz rows into model: %w", err)
+		}
+
+		quizzes = append(quizzes, quiz)
+	}
+
+	return quizzes, nil
 }
 
 func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {

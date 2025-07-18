@@ -6,8 +6,10 @@ import (
 	"help/dto"
 	"help/errorsx"
 	"help/middleware"
+	"help/model"
 	"help/utils"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -40,6 +42,7 @@ func (service *CourseSerivce) getCourses(writer http.ResponseWriter, request *ht
 
 func (service *CourseSerivce) getCourse(writer http.ResponseWriter, request *http.Request) {
 	user := utils.GetCurrentUser(request)
+	isStudent := user.Role == model.RoleStudent
 
 	courseIdString := mux.Vars(request)["id"]
 	courseId, err := strconv.Atoi(courseIdString)
@@ -52,6 +55,16 @@ func (service *CourseSerivce) getCourse(writer http.ResponseWriter, request *htt
 	if err != nil {
 		utils.WriteError(writer, err)
 		return
+	}
+
+	if isStudent {
+		course.Assignments = slices.DeleteFunc(course.Assignments, func(assignment model.Assignment) bool {
+			return !assignment.Published
+		})
+
+		course.Quizzes = slices.DeleteFunc(course.Quizzes, func(quiz model.Quiz) bool {
+			return !quiz.Published
+		})
 	}
 
 	utils.WriteJson(writer, http.StatusOK, course.ToDto())
