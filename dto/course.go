@@ -19,3 +19,7 @@ type ThinCourseGetDto struct {
 	Name     string `json:"name"`
 	LongName string `json:"longName"`
 }
+
+type CourseGradeGetDto struct {
+	AssignmentGrades []AssignemntGradeGetDto `json:"assignmentGrades"`
+}
