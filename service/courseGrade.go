@@ -14,10 +14,11 @@ import (
 
 type CourseGradeService struct {
 	assignmentGradeDao *dao.AssignmentGradeDao
+	quizGradeDao       *dao.QuizGradeDao
 }
 
-func NewCourseGradeService(assignmentGradeDao *dao.AssignmentGradeDao) *CourseGradeService {
-	return &CourseGradeService{assignmentGradeDao: assignmentGradeDao}
+func NewCourseGradeService(assignmentGradeDao *dao.AssignmentGradeDao, quizGradeDao *dao.QuizGradeDao) *CourseGradeService {
+	return &CourseGradeService{assignmentGradeDao: assignmentGradeDao, quizGradeDao: quizGradeDao}
 }
 
 func (service *CourseGradeService) RegisterRoutes(authorizedRouter *mux.Router) {
@@ -39,5 +40,10 @@ func (service *CourseGradeService) getGrades(writer http.ResponseWriter, request
 		utils.WriteError(writer, err)
 	}
 
-	utils.WriteJson(writer, http.StatusOK, dto.CourseGradeGetDto{AssignmentGrades: dto.ModelsToDtos(assignmentGrades)})
+	quizGrades, err := service.quizGradeDao.GetQuizGrades(courseId, user.Id)
+	if err != nil {
+		utils.WriteError(writer, err)
+	}
+
+	utils.WriteJson(writer, http.StatusOK, dto.CourseGradeGetDto{AssignmentGrades: dto.ModelsToDtos(assignmentGrades), QuizGrades: dto.ModelsToDtos(quizGrades)})
 }

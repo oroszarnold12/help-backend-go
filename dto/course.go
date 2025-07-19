@@ -22,4 +22,5 @@ type ThinCourseGetDto struct {
 
 type CourseGradeGetDto struct {
 	AssignmentGrades []AssignemntGradeGetDto `json:"assignmentGrades"`
+	QuizGrades       []QuizGradeGetDto       `json:"quizGrades"`
 }

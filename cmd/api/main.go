@@ -36,6 +36,7 @@ func (api *Api) Run() error {
 	participationDao := dao.NewPariticipationDao(api.db)
 	invitationsDao := dao.NewInvitationDao(api.db)
 	assignmentGradeDao := dao.NewAssignmentGradeDao(api.db)
+	quizGradeDao := dao.NewQuizGradeDao(api.db)
 
 	loggingMiddleware := middleware.NewLoggingMiddleware()
 	authMiddleware := middleware.NewAuthMiddleware(userDao)
@@ -62,7 +63,7 @@ func (api *Api) Run() error {
 	invitationsService := service.NewInvitationService(invitationsDao, participationDao)
 	invitationsService.RegisterRoutes(authorizedRouter)
 
-	courseGradeService := service.NewCourseGradeService(assignmentGradeDao)
+	courseGradeService := service.NewCourseGradeService(assignmentGradeDao, quizGradeDao)
 	courseGradeService.RegisterRoutes(authorizedRouter)
 
 	handler := cors.New(cors.Options{
