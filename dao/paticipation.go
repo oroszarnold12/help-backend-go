@@ -48,6 +48,32 @@ func (dao *ParticipationDao) GetParticipationsOfUser(userId int) ([]model.Partic
 	return participations, nil
 }
 
+func (dao *ParticipationDao) GetParticipationsOfCourse(courseId int) ([]model.Participation, error) {
+	rows, err := dao.db.Query(
+		fmt.Sprintf(`
+			SELECT %s 
+			FROM participations p 
+			JOIN users u ON u.id = p.user_id 
+			JOIN courses c ON c.id = p.course_id 
+			WHERE p.course_id = ?`,
+			participationSelectFields,
+		),
+		courseId,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+	defer rows.Close()
+
+	participations, err := scanRowsToParticipations(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return participations, nil
+}
+
 func (dao *ParticipationDao) CreateParticipation(userId int, courseId int) error {
 	_, err := dao.db.Exec("INSERT INTO participations (uuid, user_id, course_id, show_on_dashboard) VALUES (?, ?, ?, ?)", uuid.New(), userId, courseId, true)
 	if err != nil {
