@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"help/model"
+	"help/utils"
 )
 
 const quizGradeFields = `
 	qg.id, qg.uuid, qg.grade,
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password,
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group,
 	q.id, q.uuid, q.name, q.due_date, q.points, q.published
 `
 
@@ -54,6 +55,7 @@ func scanRowsToQuizGrades(rows *sql.Rows) ([]model.QuizGrade, error) {
 	for rows.Next() {
 		var quizGrade model.QuizGrade
 		var submitter model.User
+		var submitterGroup sql.NullString
 		var quiz model.Quiz
 
 		err := rows.Scan(
@@ -67,6 +69,7 @@ func scanRowsToQuizGrades(rows *sql.Rows) ([]model.QuizGrade, error) {
 			&submitter.Email,
 			&submitter.Role,
 			&submitter.Password,
+			&submitterGroup,
 			&quiz.Id,
 			&quiz.Uuid,
 			&quiz.Name,
@@ -79,6 +82,7 @@ func scanRowsToQuizGrades(rows *sql.Rows) ([]model.QuizGrade, error) {
 			return nil, fmt.Errorf("Cannot scan quiz grade rows into model: %w", err)
 		}
 
+		utils.ConvertNullString(submitterGroup, &submitter.Group)
 		quizGrade.Submitter = submitter
 		quizGrade.Quiz = quiz
 		quizGrades = append(quizGrades, quizGrade)

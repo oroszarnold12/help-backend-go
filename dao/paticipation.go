@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	"help/model"
+	"help/utils"
 
 	"github.com/google/uuid"
 )
 
 const participationSelectFields = `
 	p.id, p.uuid, p.show_on_dashboard, 
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, 
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group,
 	c.id, c.uuid, c.name, c.long_name, c.description
 `
 
@@ -90,6 +91,8 @@ func scanRowsToParticipations(rows *sql.Rows) ([]model.Participation, error) {
 		var participation model.Participation
 		var course model.Course
 		var user model.User
+		var userGroup sql.NullString
+
 		err := rows.Scan(
 			&participation.Id,
 			&participation.Uuid,
@@ -101,6 +104,7 @@ func scanRowsToParticipations(rows *sql.Rows) ([]model.Participation, error) {
 			&user.Email,
 			&user.Role,
 			&user.Password,
+			&userGroup,
 			&course.Id,
 			&course.Uuid,
 			&course.Name,
@@ -112,6 +116,7 @@ func scanRowsToParticipations(rows *sql.Rows) ([]model.Participation, error) {
 			return nil, fmt.Errorf("Cannot scan participation row into model: %w", err)
 		}
 
+		utils.ConvertNullString(userGroup, &user.Group)
 		participation.Course = course
 		participation.User = user
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"help/errorsx"
 	"help/model"
+	"help/utils"
 	"strconv"
 )
 
@@ -19,7 +20,7 @@ func NewInvitationDao(db *sql.DB) *InvitationDao {
 
 const invitationSelectionFields = `
 	i.id, i.uuid, 
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, 
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group,
 	c.id, c.uuid, c.name, c.long_name, c.description
 `
 
@@ -88,6 +89,7 @@ func scanRowToInvitation(row *sql.Row) (*model.Invitation, error) {
 	var invitation model.Invitation
 	var course model.Course
 	var user model.User
+	var userGroup sql.NullString
 
 	err := row.Scan(
 		&invitation.Id,
@@ -99,6 +101,7 @@ func scanRowToInvitation(row *sql.Row) (*model.Invitation, error) {
 		&user.Email,
 		&user.Role,
 		&user.Password,
+		&userGroup,
 		&course.Id,
 		&course.Uuid,
 		&course.Name,
@@ -110,6 +113,7 @@ func scanRowToInvitation(row *sql.Row) (*model.Invitation, error) {
 		return nil, fmt.Errorf("Cannot scan invitation row into model: %w", err)
 	}
 
+	utils.ConvertNullString(userGroup, &user.Group)
 	invitation.User = user
 	invitation.Course = course
 
@@ -123,6 +127,8 @@ func scanRowsToInvitations(rows *sql.Rows) ([]model.Invitation, error) {
 		var invitation model.Invitation
 		var course model.Course
 		var user model.User
+		var userGroup sql.NullString
+
 		err := rows.Scan(
 			&invitation.Id,
 			&invitation.Uuid,
@@ -133,6 +139,7 @@ func scanRowsToInvitations(rows *sql.Rows) ([]model.Invitation, error) {
 			&user.Email,
 			&user.Role,
 			&user.Password,
+			&userGroup,
 			&course.Id,
 			&course.Uuid,
 			&course.Name,
@@ -144,6 +151,7 @@ func scanRowsToInvitations(rows *sql.Rows) ([]model.Invitation, error) {
 			return nil, fmt.Errorf("Cannot scan invitation row into model: %w", err)
 		}
 
+		utils.ConvertNullString(userGroup, &user.Group)
 		invitation.User = user
 		invitation.Course = course
 

@@ -39,7 +39,7 @@ func (service *AuthService) login(writer http.ResponseWriter, request *http.Requ
 		if errors.As(err, &notFoundError) {
 			utils.WriteError(writer, errorsx.NewBadRequestError("Incorrect username or password"))
 		} else {
-			utils.WriteError(writer, fmt.Errorf("Cannot get user by email '%v'", loginDto.Username))
+			utils.WriteError(writer, fmt.Errorf("Cannot get user by email '%v': %w", loginDto.Username, err))
 		}
 
 		return

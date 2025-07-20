@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"help/errorsx"
 	"help/model"
+	"help/utils"
 )
 
-const userSelectFields = "id, uuid, first_name, last_name, email, role, password"
+const userSelectFields = "id, uuid, first_name, last_name, email, role, password, `group`"
 
 type UserDao struct {
 	db *sql.DB
@@ -19,7 +20,7 @@ func NewUserDao(db *sql.DB) *UserDao {
 }
 
 func (dao *UserDao) CreateUser(user model.User) error {
-	_, err := dao.db.Exec("INSERT INTO users (uuid, first_name, last_name, email, role, password) VALUES (?,?,?,?,?,?)", user.Uuid, user.FirstName, user.LastName, user.Email, user.Role, user.Password)
+	_, err := dao.db.Exec("INSERT INTO users (uuid, first_name, last_name, email, role, password, `group`) VALUES (?,?,?,?,?,?,?)", user.Uuid, user.FirstName, user.LastName, user.Email, user.Role, user.Password, user.Group)
 	if err != nil {
 		return fmt.Errorf("Cannot exec statement: %w", err)
 	}
@@ -75,6 +76,7 @@ func (dao *UserDao) GetUsers() ([]model.User, error) {
 
 func scanRowToUser(row *sql.Row) (*model.User, error) {
 	var user model.User
+	var userGroup sql.NullString
 
 	err := row.Scan(
 		&user.Id,
@@ -84,11 +86,14 @@ func scanRowToUser(row *sql.Row) (*model.User, error) {
 		&user.Email,
 		&user.Role,
 		&user.Password,
+		&userGroup,
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("Cannot scan user row into model: %w", err)
 	}
+
+	utils.ConvertNullString(userGroup, &user.Group)
 
 	return &user, nil
 }
@@ -98,6 +103,8 @@ func scanRowsToUsers(rows *sql.Rows) ([]model.User, error) {
 
 	for rows.Next() {
 		var user model.User
+		var userGroup sql.NullString
+
 		err := rows.Scan(
 			&user.Id,
 			&user.Uuid,
@@ -106,12 +113,14 @@ func scanRowsToUsers(rows *sql.Rows) ([]model.User, error) {
 			&user.Email,
 			&user.Role,
 			&user.Password,
+			&userGroup,
 		)
 
 		if err != nil {
 			return nil, fmt.Errorf("Cannot scan user row into model: %w", err)
 		}
 
+		utils.ConvertNullString(userGroup, &user.Group)
 		users = append(users, user)
 	}
 

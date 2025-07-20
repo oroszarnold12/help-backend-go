@@ -48,6 +48,9 @@ func (api *Api) Run() error {
 	userService := service.NewUserService(userDao)
 	userService.RegisterRoutes(authMiddleware, authorizedRouter)
 
+	groupService := service.NewGroupService(userDao)
+	groupService.RegisterRoutes(authorizedRouter)
+
 	authService := service.NewAuthService(userDao)
 	authService.RegisterRoutes(publicRouter)
 

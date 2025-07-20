@@ -7,6 +7,7 @@ type UserGetDto struct {
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
+	Group     string `json:"personGroup"`
 }
 
 type UserPostDto struct {
@@ -15,4 +16,5 @@ type UserPostDto struct {
 	Email     string `json:"email" validate:"required,email,max=255"`
 	Password  string `json:"password" validate:"required,password,min=8,max=255"`
 	Role      string `json:"role" validate:"required,oneof=ROLE_STUDENT ROLE_TEACHER ROLE_ADMIN"`
+	Group     string `json:"personGroup" validate:"required,max=255"`
 }

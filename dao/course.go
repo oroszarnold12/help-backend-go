@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"help/errorsx"
 	"help/model"
+	"help/utils"
 	"strconv"
 )
 
 const courseSelectFields = `
 	c.id, c.uuid, c.name, c.long_name, c.description,
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group
 `
 
 const announcementFields = `
@@ -23,7 +24,7 @@ const assignmentFields = `
 
 const discussionFields = `
 	d.id, d.uuid, d.name, d.date,
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group
 `
 
 const quizFields = `
@@ -291,6 +292,7 @@ func scanRowsToDiscussions(rows *sql.Rows) ([]model.Discussion, error) {
 	for rows.Next() {
 		var discussion model.Discussion
 		var creator model.User
+		var creatorGroup sql.NullString
 
 		err := rows.Scan(
 			&discussion.Id,
@@ -304,12 +306,14 @@ func scanRowsToDiscussions(rows *sql.Rows) ([]model.Discussion, error) {
 			&creator.Email,
 			&creator.Role,
 			&creator.Password,
+			&creatorGroup,
 		)
 
 		if err != nil {
 			return nil, fmt.Errorf("Cannot scan discussion rows into model: %w", err)
 		}
 
+		utils.ConvertNullString(creatorGroup, &creator.Group)
 		discussions = append(discussions, discussion)
 	}
 
@@ -347,6 +351,7 @@ func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
 	for rows.Next() {
 		var course model.Course
 		var teacher model.User
+		var teacherGroup sql.NullString
 
 		err := rows.Scan(
 			&course.Id,
@@ -361,12 +366,14 @@ func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
 			&teacher.Email,
 			&teacher.Role,
 			&teacher.Password,
+			&teacherGroup,
 		)
 
 		if err != nil {
 			return nil, fmt.Errorf("Cannot scan course row into model: %w", err)
 		}
 
+		utils.ConvertNullString(teacherGroup, &teacher.Group)
 		courses = append(courses, course)
 	}
 

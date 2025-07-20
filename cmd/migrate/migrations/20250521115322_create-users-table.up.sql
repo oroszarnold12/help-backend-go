@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS users (
   `last_name` VARCHAR(255),
   `email` VARCHAR(255) NOT NULL,
   `password` VARCHAR(255) NOT NULL,
-  `role` VARCHAR(50) NOT NULL 
+  `role` VARCHAR(50) NOT NULL,
+  `group` VARCHAR(255)
 );

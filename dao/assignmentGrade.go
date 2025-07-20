@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"help/model"
+	"help/utils"
 )
 
 const assignmentGradeFields = `
 	ag.id, ag.uuid, ag.grade,
-	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password,
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group,
 	a.id, a.uuid, a.name, a.due_date, a.points, a.published
 `
 
@@ -54,6 +55,7 @@ func scanRowsToAssignmentGrades(rows *sql.Rows) ([]model.AssignmentGrade, error)
 	for rows.Next() {
 		var assignmentGrade model.AssignmentGrade
 		var submitter model.User
+		var submitterGroup sql.NullString
 		var assignment model.Assignment
 
 		err := rows.Scan(
@@ -67,6 +69,7 @@ func scanRowsToAssignmentGrades(rows *sql.Rows) ([]model.AssignmentGrade, error)
 			&submitter.Email,
 			&submitter.Role,
 			&submitter.Password,
+			&submitterGroup,
 			&assignment.Id,
 			&assignment.Uuid,
 			&assignment.Name,
@@ -79,6 +82,7 @@ func scanRowsToAssignmentGrades(rows *sql.Rows) ([]model.AssignmentGrade, error)
 			return nil, fmt.Errorf("Cannot scan assignment grade rows into model: %w", err)
 		}
 
+		utils.ConvertNullString(submitterGroup, &submitter.Group)
 		assignmentGrade.Submitter = submitter
 		assignmentGrade.Assignment = assignment
 		assignmentGrades = append(assignmentGrades, assignmentGrade)
