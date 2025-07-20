@@ -21,7 +21,7 @@ func NewInvitationDao(db *sql.DB) *InvitationDao {
 const invitationSelectionFields = `
 	i.id, i.uuid, 
 	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group,
-	c.id, c.uuid, c.name, c.long_name, c.description
+	c.id, c.uuid, c.name, c.long_name
 `
 
 func (dao *InvitationDao) GetInvitationsOfUser(userId int) ([]model.Invitation, error) {
@@ -106,7 +106,6 @@ func scanRowToInvitation(row *sql.Row) (*model.Invitation, error) {
 		&course.Uuid,
 		&course.Name,
 		&course.LongName,
-		&course.Description,
 	)
 
 	if err != nil {
@@ -144,7 +143,6 @@ func scanRowsToInvitations(rows *sql.Rows) ([]model.Invitation, error) {
 			&course.Uuid,
 			&course.Name,
 			&course.LongName,
-			&course.Description,
 		)
 
 		if err != nil {

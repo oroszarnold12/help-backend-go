@@ -17,6 +17,6 @@ func (invitation Invitation) ToDto() dto.InvitationGetDto {
 	return dto.InvitationGetDto{
 		Id:     invitation.Id,
 		Uuid:   invitation.Uuid.String(),
-		Course: invitation.Course.ToDto(),
+		Course: invitation.Course.ToThinDto(),
 	}
 }
