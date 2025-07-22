@@ -16,6 +16,7 @@ type Course struct {
 	Announcements []Announcement
 	Discussions   []Discussion
 	Quizzes       []Quiz
+	Files         []CourseFile
 }
 
 func (course Course) ToDto() dto.CourseGetDto {
@@ -30,6 +31,7 @@ func (course Course) ToDto() dto.CourseGetDto {
 		Announcements: dto.ModelsToThinDtos(course.Announcements),
 		Discussions:   dto.ModelsToThinDtos(course.Discussions),
 		Quizzes:       dto.ModelsToThinDtos(course.Quizzes),
+		Files:         dto.ModelsToDtos(course.Files),
 	}
 }
 

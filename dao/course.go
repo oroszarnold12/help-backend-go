@@ -31,6 +31,11 @@ const quizFields = `
 	q.id, q.uuid, q.name, q.due_date, q.points, q.published
 `
 
+const courseFileFields = `
+	f.id, f.uuid, f.name, f.size, f.creation_date,
+	u.id, u.uuid, u.first_name, u.last_name, u.email, u.role, u.password, u.group
+`
+
 type CourseDao struct {
 	db *sql.DB
 }
@@ -207,6 +212,32 @@ func (dao *CourseDao) getQuizzesOfCourse(courseId int) ([]model.Quiz, error) {
 	return quizzes, nil
 }
 
+func (dao *CourseDao) getFilesOfCourse(courseId int) ([]model.CourseFile, error) {
+	rows, err := dao.db.Query(
+		fmt.Sprintf(`
+			SELECT %s
+			FROM course_files f
+			JOIN users u ON u.id = f.uploader_id
+			WHERE f.course_id = ?
+			`,
+			courseFileFields,
+		),
+		courseId,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query db: %w", err)
+	}
+	defer rows.Close()
+
+	files, err := scanRowsToCourseFiles(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
 func completeCourseModel(dao *CourseDao, courses []model.Course) ([]model.Course, error) {
 	for index := range courses {
 		courseId := courses[index].Id
@@ -230,10 +261,16 @@ func completeCourseModel(dao *CourseDao, courses []model.Course) ([]model.Course
 			return nil, fmt.Errorf("Cannot get quizzes of course '%d': %w", courseId, err)
 		}
 
+		files, err := dao.getFilesOfCourse(courseId)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot get files of course '%d': %w", courseId, err)
+		}
+
 		courses[index].Assignments = assignments
 		courses[index].Announcements = announcements
 		courses[index].Discussions = discussions
 		courses[index].Quizzes = quizzes
+		courses[index].Files = files
 	}
 
 	return courses, nil
@@ -314,6 +351,7 @@ func scanRowsToDiscussions(rows *sql.Rows) ([]model.Discussion, error) {
 		}
 
 		utils.ConvertNullString(creatorGroup, &creator.Group)
+		discussion.Creator = creator
 		discussions = append(discussions, discussion)
 	}
 
@@ -343,6 +381,42 @@ func scanRowsToQuizzes(rows *sql.Rows) ([]model.Quiz, error) {
 	}
 
 	return quizzes, nil
+}
+
+func scanRowsToCourseFiles(rows *sql.Rows) ([]model.CourseFile, error) {
+	var files []model.CourseFile
+
+	for rows.Next() {
+		var file model.CourseFile
+		var uploader model.User
+		var uploaderGroup sql.NullString
+
+		err := rows.Scan(
+			&file.Id,
+			&file.Uuid,
+			&file.Name,
+			&file.Size,
+			&file.CreationDate,
+			&uploader.Id,
+			&uploader.Uuid,
+			&uploader.FirstName,
+			&uploader.LastName,
+			&uploader.Email,
+			&uploader.Role,
+			&uploader.Password,
+			&uploaderGroup,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("Cannot scan course file rows into model: %w", err)
+		}
+
+		utils.ConvertNullString(uploaderGroup, &uploader.Group)
+		file.Uploader = uploader
+		files = append(files, file)
+	}
+
+	return files, nil
 }
 
 func scanRowsToCourses(rows *sql.Rows) ([]model.Course, error) {
