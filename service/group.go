@@ -9,11 +9,11 @@ import (
 )
 
 type GroupService struct {
-	userDao *dao.UserDao
+	userLister dao.UserLister
 }
 
-func NewGroupService(userDao *dao.UserDao) *GroupService {
-	return &GroupService{userDao: userDao}
+func NewGroupService(userLister dao.UserLister) *GroupService {
+	return &GroupService{userLister: userLister}
 }
 
 func (service *GroupService) RegisterRoutes(authorizedRouter *mux.Router) {
@@ -21,7 +21,7 @@ func (service *GroupService) RegisterRoutes(authorizedRouter *mux.Router) {
 }
 
 func (service *GroupService) getGroups(writer http.ResponseWriter, request *http.Request) {
-	users, err := service.userDao.GetUsers()
+	users, err := service.userLister.GetUsers()
 	if err != nil {
 		utils.WriteError(writer, err)
 	}

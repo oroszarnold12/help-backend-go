@@ -13,6 +13,10 @@ import (
 
 const userSelectFields = "id, uuid, first_name, last_name, email, role, password, `group`"
 
+type UserLister interface {
+	GetUsers() ([]model.User, error)
+}
+
 type UserDao struct {
 	db *sql.DB
 }

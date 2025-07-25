@@ -1,3 +1,5 @@
+.PHONY: test
+
 build:
 	@go build -o bin/help cmd/main.go
 
@@ -12,3 +14,7 @@ migrate-up:
 
 migrate-down:
 	@go run cmd/migrate/main.go down 
+
+test:
+	@echo "Running all tests..."
+	@go test -v ./...
