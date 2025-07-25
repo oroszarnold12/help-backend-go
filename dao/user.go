@@ -7,6 +7,8 @@ import (
 	"help/errorsx"
 	"help/model"
 	"help/utils"
+
+	"github.com/google/uuid"
 )
 
 const userSelectFields = "id, uuid, first_name, last_name, email, role, password, `group`"
@@ -43,13 +45,13 @@ func (dao *UserDao) GetUserByEmail(email string) (*model.User, error) {
 	return user, nil
 }
 
-func (dao *UserDao) GetUserByUuid(uuid string) (*model.User, error) {
+func (dao *UserDao) GetUserByUuid(uuid uuid.UUID) (*model.User, error) {
 	row := dao.db.QueryRow(fmt.Sprintf("SELECT %s FROM users where uuid = ?", userSelectFields), uuid)
 
 	user, err := scanRowToUser(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errorsx.NewNotFoundError("User", uuid)
+			return nil, errorsx.NewNotFoundError("User", uuid.String())
 		}
 
 		return nil, fmt.Errorf("Cannot query db: %w", err)

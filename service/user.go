@@ -84,6 +84,7 @@ func (service *UserService) registerUsers(writer http.ResponseWriter, request *h
 		return
 	}
 
+	var users []model.User
 	for _, userPostDto := range userPostDtos {
 		hashedPassword, err := utils.HashPassword(userPostDto.Password)
 		if err != nil {
@@ -96,7 +97,14 @@ func (service *UserService) registerUsers(writer http.ResponseWriter, request *h
 			utils.WriteError(writer, err)
 			return
 		}
+
+		fullUser, err := service.userDao.GetUserByUuid(user.Uuid)
+		if err != nil {
+			utils.WriteError(writer, err)
+			return
+		}
+		users = append(users, *fullUser)
 	}
 
-	utils.WriteJson(writer, http.StatusCreated, nil)
+	utils.WriteJson(writer, http.StatusOK, dto.ModelsToDtos(users))
 }

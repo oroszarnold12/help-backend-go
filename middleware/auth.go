@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type AuthMiddleware struct {
@@ -49,7 +50,7 @@ func (middleware *AuthMiddleware) MiddlewareFunc(handler http.Handler) http.Hand
 		claims := token.Claims.(jwt.MapClaims)
 		userUuid := claims[constant.UserUuidClaimKey].(string)
 
-		user, err := middleware.userDao.GetUserByUuid(userUuid)
+		user, err := middleware.userDao.GetUserByUuid(uuid.MustParse(userUuid))
 		if err != nil {
 			utils.WriteError(writer, fmt.Errorf("%w: %v", errorsx.NewUnauthorizedError(), err))
 			return

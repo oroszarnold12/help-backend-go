@@ -13,7 +13,7 @@ import (
 func CreateToken(user *model.User) (string, error) {
 	expiration := time.Second * time.Duration(config.Env.JWTExpirationSeconds)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		constant.UserUuidClaimKey: user.Uuid,
+		constant.UserUuidClaimKey: user.Uuid.String(),
 		"expiresAt":               time.Now().Add(expiration).Unix(),
 	})
 
