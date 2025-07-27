@@ -60,7 +60,7 @@ func (api *Api) Run() error {
 	courseService := service.NewCourseService(courseDao)
 	courseService.RegisterRoutes(authMiddleware, authorizedRouter)
 
-	participationService := service.NewParticipaionService(participationDao)
+	participationService := service.NewParticipationService(participationDao)
 	participationService.RegisterRoutes(authorizedRouter)
 
 	invitationsService := service.NewInvitationService(invitationsDao, participationDao)

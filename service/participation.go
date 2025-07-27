@@ -15,11 +15,11 @@ import (
 )
 
 type ParticipationService struct {
-	participationDao *dao.ParticipationDao
+	participationLister dao.ParticipationLister
 }
 
-func NewParticipaionService(participationDao *dao.ParticipationDao) *ParticipationService {
-	return &ParticipationService{participationDao: participationDao}
+func NewParticipationService(participationLister dao.ParticipationLister) *ParticipationService {
+	return &ParticipationService{participationLister: participationLister}
 }
 
 func (service *ParticipationService) RegisterRoutes(authorizedRouter *mux.Router) {
@@ -30,7 +30,7 @@ func (service *ParticipationService) RegisterRoutes(authorizedRouter *mux.Router
 func (service *ParticipationService) getParticipations(writer http.ResponseWriter, request *http.Request) {
 	user := utils.GetCurrentUser(request)
 
-	participations, err := service.participationDao.GetParticipationsOfUser(user.Id)
+	participations, err := service.participationLister.GetParticipationsOfUser(user.Id)
 	if err != nil {
 		utils.WriteError(writer, err)
 		return
@@ -49,7 +49,7 @@ func (service *ParticipationService) getParticipants(writer http.ResponseWriter,
 		return
 	}
 
-	participations, err := service.participationDao.GetParticipationsOfCourse(courseId)
+	participations, err := service.participationLister.GetParticipationsOfCourse(courseId)
 	if err != nil {
 		utils.WriteError(writer, err)
 		return

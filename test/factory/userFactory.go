@@ -1,4 +1,4 @@
-package testutil
+package factory
 
 import (
 	"help/model"
@@ -8,7 +8,7 @@ import (
 
 func NewTestUser(overrides ...func(*model.User)) model.User {
 	user := model.User{
-		Id:        0,
+		Id:        1,
 		Uuid:      uuid.New(),
 		FirstName: "John",
 		LastName:  "Doe",

@@ -13,8 +13,8 @@ func NewStatusService() *StatusService {
 	return &StatusService{}
 }
 
-func (service *StatusService) RegisterRoutes(publicRotuer *mux.Router) {
-	publicRotuer.HandleFunc("/server-status/ping", service.ping).Methods(http.MethodGet)
+func (service *StatusService) RegisterRoutes(publicRouter *mux.Router) {
+	publicRouter.HandleFunc("/server-status/ping", service.ping).Methods(http.MethodGet)
 }
 
 func (service *StatusService) ping(writer http.ResponseWriter, request *http.Request) {

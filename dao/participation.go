@@ -15,6 +15,11 @@ const participationSelectFields = `
 	c.id, c.uuid, c.name, c.long_name, c.description
 `
 
+type ParticipationLister interface {
+	GetParticipationsOfUser(userId int) ([]model.Participation, error)
+	GetParticipationsOfCourse(courseId int) ([]model.Participation, error)
+}
+
 type ParticipationDao struct {
 	db *sql.DB
 }

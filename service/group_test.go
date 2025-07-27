@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"help/model"
+	"help/test/factory"
 
-	"help/test/testutil"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -24,11 +24,11 @@ func (lister *userListerMock) GetUsers() ([]model.User, error) {
 }
 
 func TestGetGroups(t *testing.T) {
-	user1 := testutil.NewTestUser(func(u *model.User) { u.Group = "Group1" })
-	user2 := testutil.NewTestUser(func(u *model.User) { u.Group = "Group2" })
-	user3 := testutil.NewTestUser(func(u *model.User) { u.Group = "Group2" })
-	user4 := testutil.NewTestUser(func(u *model.User) { u.Group = "" })
-	user5 := testutil.NewTestUser(func(u *model.User) { u.Group = "" })
+	user1 := factory.NewTestUser(func(u *model.User) { u.Group = "Group1" })
+	user2 := factory.NewTestUser(func(u *model.User) { u.Group = "Group2" })
+	user3 := factory.NewTestUser(func(u *model.User) { u.Group = "Group2" })
+	user4 := factory.NewTestUser(func(u *model.User) { u.Group = "" })
+	user5 := factory.NewTestUser(func(u *model.User) { u.Group = "" })
 
 	tests := []struct {
 		name       string
@@ -87,17 +87,18 @@ func TestGetGroups(t *testing.T) {
 			if test.wantError == "" {
 				var data map[string][]string
 				if err := json.NewDecoder(response.Body).Decode(&data); err != nil {
-					t.Errorf("Cannot decode response: %v", err)
+					t.Errorf("Cannot decode body: %v", err)
 				}
 
 				groups := data["personGroups"]
+				slices.Sort(groups)
 				if !slices.Equal(groups, test.wantGroups) {
 					t.Errorf("Got groups %v, wanted %v", groups, test.wantGroups)
 				}
 			} else {
 				var data map[string]string
 				if err := json.NewDecoder(response.Body).Decode(&data); err != nil {
-					t.Errorf("Cannot decode response: %v", err)
+					t.Errorf("Cannot decode body: %v", err)
 				}
 
 				error := data["error"]
