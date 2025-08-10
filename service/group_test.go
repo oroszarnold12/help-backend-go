@@ -11,12 +11,21 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
 type userListerMock struct {
 	users []model.User
 	error error
+}
+
+func (lister *userListerMock) GetUserByEmail(email string) (*model.User, error) {
+	panic("unimplemented")
+}
+
+func (lister *userListerMock) GetUserByUuid(uuid uuid.UUID) (*model.User, error) {
+	panic("unimplemented")
 }
 
 func (lister *userListerMock) GetUsers() ([]model.User, error) {

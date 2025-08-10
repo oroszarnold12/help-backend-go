@@ -15,6 +15,17 @@ const userSelectFields = "id, uuid, first_name, last_name, email, role, password
 
 type UserLister interface {
 	GetUsers() ([]model.User, error)
+	GetUserByEmail(email string) (*model.User, error)
+	GetUserByUuid(uuid uuid.UUID) (*model.User, error)
+}
+
+type UserSaver interface {
+	CreateUser(user model.User) error
+}
+
+type UserListSaver interface {
+	UserLister
+	UserSaver
 }
 
 type UserDao struct {

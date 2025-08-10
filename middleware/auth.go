@@ -16,12 +16,16 @@ import (
 )
 
 type AuthMiddleware struct {
-	userDao      *dao.UserDao
+	userLister   dao.UserLister
 	allowedRoles map[string][]model.Role
 }
 
-func NewAuthMiddleware(userDao *dao.UserDao) *AuthMiddleware {
-	return &AuthMiddleware{userDao: userDao, allowedRoles: make(map[string][]model.Role)}
+type RoutePreAuthorizer interface {
+	AllowRoles(path, method string, roles []model.Role)
+}
+
+func NewAuthMiddleware(userLister dao.UserLister) *AuthMiddleware {
+	return &AuthMiddleware{userLister: userLister, allowedRoles: make(map[string][]model.Role)}
 }
 
 func (middleware *AuthMiddleware) AllowRoles(path string, method string, roles []model.Role) {
@@ -50,7 +54,7 @@ func (middleware *AuthMiddleware) MiddlewareFunc(handler http.Handler) http.Hand
 		claims := token.Claims.(jwt.MapClaims)
 		userUuid := claims[constant.UserUuidClaimKey].(string)
 
-		user, err := middleware.userDao.GetUserByUuid(uuid.MustParse(userUuid))
+		user, err := middleware.userLister.GetUserByUuid(uuid.MustParse(userUuid))
 		if err != nil {
 			utils.WriteError(writer, fmt.Errorf("%w: %v", errorsx.NewUnauthorizedError(), err))
 			return

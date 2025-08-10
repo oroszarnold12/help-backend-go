@@ -17,18 +17,18 @@ import (
 )
 
 type UserService struct {
-	userDao *dao.UserDao
+	userListSaver dao.UserListSaver
 }
 
-func NewUserService(userDao *dao.UserDao) *UserService {
-	return &UserService{userDao: userDao}
+func NewUserService(userListSaver dao.UserListSaver) *UserService {
+	return &UserService{userListSaver: userListSaver}
 }
 
-func (service *UserService) RegisterRoutes(authMiddleware *middleware.AuthMiddleware, authorizedRouter *mux.Router) {
+func (service *UserService) RegisterRoutes(preAuthorizer middleware.RoutePreAuthorizer, authorizedRouter *mux.Router) {
 	authorizedRouter.HandleFunc("/user", service.getCurrentUser).Methods(http.MethodGet)
 
 	authorizedRouter.HandleFunc("/persons", service.registerUsers).Methods(http.MethodPost)
-	authMiddleware.AllowRoles("/persons", http.MethodPost, []model.Role{model.RoleAdmin})
+	preAuthorizer.AllowRoles("/persons", http.MethodPost, []model.Role{model.RoleAdmin})
 
 	authorizedRouter.HandleFunc("/persons", service.getUsers).Methods(http.MethodGet)
 }
@@ -43,9 +43,10 @@ func (service *UserService) getUsers(writer http.ResponseWriter, request *http.R
 	currentUser := utils.GetCurrentUser(request)
 	isAdmin := currentUser.Role == model.RoleAdmin
 
-	users, err := service.userDao.GetUsers()
+	users, err := service.userListSaver.GetUsers()
 	if err != nil {
 		utils.WriteError(writer, err)
+		return
 	}
 
 	if !isAdmin {
@@ -66,7 +67,7 @@ func (service *UserService) registerUsers(writer http.ResponseWriter, request *h
 
 	existingEmails := []string{}
 	for _, userPostDto := range userPostDtos {
-		_, err := service.userDao.GetUserByEmail(userPostDto.Email)
+		_, err := service.userListSaver.GetUserByEmail(userPostDto.Email)
 		if err == nil {
 			existingEmails = append(existingEmails, userPostDto.Email)
 			continue
@@ -93,12 +94,12 @@ func (service *UserService) registerUsers(writer http.ResponseWriter, request *h
 		}
 		user := model.UserFromPostDto(userPostDto, hashedPassword)
 
-		if err := service.userDao.CreateUser(user); err != nil {
+		if err := service.userListSaver.CreateUser(user); err != nil {
 			utils.WriteError(writer, err)
 			return
 		}
 
-		fullUser, err := service.userDao.GetUserByUuid(user.Uuid)
+		fullUser, err := service.userListSaver.GetUserByUuid(user.Uuid)
 		if err != nil {
 			utils.WriteError(writer, err)
 			return

@@ -28,9 +28,13 @@ func (user User) ToDto() dto.UserGetDto {
 	}
 }
 
+var UserUuidGenerator = func() uuid.UUID {
+	return uuid.New()
+}
+
 func UserFromPostDto(dto dto.UserPostDto, password string) User {
 	return User{
-		Uuid:      uuid.New(),
+		Uuid:      UserUuidGenerator(),
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,
 		Email:     dto.Email,
